@@ -1,0 +1,107 @@
+---
+description: Test data management patterns - Excel data, JSON templates, dynamic data generation
+globs:
+  - "**/testdata/**"
+  - "**/jsontemplate/**"
+  - "**/*Test*.java"
+alwaysApply: false
+---
+
+# Test Data Management
+
+## Data Sources
+
+### 1. Excel-Based Test Data (Primary)
+
+Excel files store test data with the following structure:
+- **Location**: `src/test/resources/testdata/`
+- **Format**: `.xlsx` files
+- **Sheet naming**: `<Entity>_API` (e.g., `Company_API`, `User_API`)
+
+#### Excel Structure
+| TestCase | field1 | field2 | field3 | ... |
+|----------|--------|--------|--------|-----|
+| TC-01    | value1 | value2 | value3 | ... |
+| TC-01-update | newVal1 | newVal2 | | ... |
+| TC-02    | value1 | value2 | value3 | ... |
+
+- First column: Test case identifier
+- Header row: Field names matching JSON payload keys
+- Data rows: Values for each test case
+
+#### Reading Excel Data
+```java
+// In test class (inherited from base)
+HashMap<String, String> testData = xlsFile.readTestData("<SheetName>", "<TestCaseID>");
+// Example: xlsFile.readTestData("Company_API", "TC-01");
+```
+
+#### Dynamic Values in Excel
+Use placeholder keywords that get replaced at runtime:
+- `Unique`, `UNIQUE`, `unique` - Replaced with timestamp for uniqueness
+
+### 2. JSON Templates (Request Payloads)
+
+JSON template files define request payload structure:
+- **Location**: `src/test/resources/jsontemplate/<domain>/`
+- **Naming**: `<entity>.json` or `<entity>_<variant>.json`
+
+#### Template Usage Pattern
+1. Read template from file
+2. Update fields with test data
+3. Optionally remove fields for negative tests
+4. Send as request body
+
+#### Template Constants
+Define template paths in constants class:
+```java
+public static final String ENTITY_TEMPLATE = "<domain>/<entity>.json";
+public static final String ENTITY_ALL_FIELDS_TEMPLATE = "<domain>/<entity>_all.json";
+```
+
+### 3. Dynamic Data Generation (Programmatic)
+
+Use faker/random utilities for dynamic test data:
+- Random company names
+- Random person names (first, last, full)
+- Random emails
+- Random phone numbers
+
+#### When to Use Programmatic Data
+- Tests requiring unique values each run
+- Tests with minimal required fields
+- Tests where Excel data is overkill
+
+```java
+// Example: Create minimal test data programmatically
+HashMap<String, String> testData = new HashMap<>();
+testData.put("name", RandomUtil.generateRandomCompanyName());
+```
+
+## Data Flow in Tests
+
+```
+Excel/Programmatic Data
+        |
+        v
+  HashMap<String, String>
+        |
+        v
+   JSON Template
+        |
+        v
+   JsonObject (payload)
+        |
+        v
+   API Request
+```
+
+## Best Practices
+
+1. **Prefer Excel data** for comprehensive test scenarios with many fields
+2. **Use programmatic data** for simple positive tests or mandatory-field-only tests
+3. **Store reusable test data** in Excel, not hardcoded in tests
+4. **Use templates** for complex nested JSON structures
+5. **Name test cases meaningfully** (e.g., `TC-01-positive`, `TC-02-missing-name`)
+6. **Keep Excel sheets organized** by entity/domain
+7. **Document expected values** in Excel for validation tests

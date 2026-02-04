@@ -1,0 +1,205 @@
+---
+description: Reporting, assertions, and error handling patterns for API tests
+globs:
+  - "**/*Test*.java"
+  - "**/exception/**"
+  - "**/reporting/**"
+alwaysApply: false
+---
+
+# Reporting, Assertions, and Error Handling
+
+## Reporting Framework
+
+### Extent Reports Integration
+
+The framework uses ExtentReports for detailed test reporting:
+
+```java
+// Log passing step
+ExtentTestManager.getTest().pass("Step description with details");
+
+// Log failing step
+ExtentTestManager.getTest().fail("Failure description");
+
+// Log informational step
+ExtentTestManager.getTest().info("Information message");
+```
+
+### Logging Patterns
+
+#### Successful Operations
+```java
+ExtentTestManager.getTest().pass(String.format(
+    "Create <entity> successful. Name: %s, ID: %s",
+    entityName, entityId
+));
+```
+
+#### Status Code Verification
+```java
+ExtentTestManager.getTest().pass(String.format(
+    "Status code verification passed. Expected: %d, Actual: %d",
+    expectedCode, actualCode
+));
+```
+
+#### Cleanup Operations
+```java
+ExtentTestManager.getTest().info("Cleaning up test data: deleting <entity> with ID " + id);
+ExtentTestManager.getTest().pass(String.format(
+    "Cleanup complete. Deleted <entity>: %s (ID: %s)",
+    name, id
+));
+```
+
+## Assertion Patterns
+
+### Status Code Assertions
+```java
+int actualStatusCode = pageObject.getStatusCode();
+Assert.assertEquals(actualStatusCode, APIConstants.STATUS_CREATED, "Check status code");
+```
+
+### Common Status Codes
+- `STATUS_OK` (200) - Successful GET/PUT
+- `STATUS_CREATED` (201) - Successful POST create
+- `STATUS_BAD_REQUEST` (400) - Validation errors
+- `STATUS_UNAUTHORIZED` (401) - Auth failures
+- `STATUS_NOT_FOUND` (404) - Resource not found
+
+### Error Message Assertions
+```java
+String actualError = pageObject.getResponseErrorMessage();
+Assert.assertEquals(actualError, APIConstants.ERR_EXPECTED_MESSAGE);
+```
+
+### Schema Validation
+```java
+SchemaValidatorUtil.validateResponseSchema(
+    response.asString(),
+    "schemas/<entity>-response-schema.json"
+);
+```
+
+## Exception Handling
+
+### Custom Exception Pattern
+
+The framework uses a custom exception class that:
+1. Logs to Extent report
+2. Reports to external systems (optional)
+3. Fails the test with detailed message
+
+```java
+// With test management integration
+throw new CustomException(e, MANUAL_TC_ID, "Failed", startedOn, CommonUtil.getCurrentTime());
+
+// Simple failure with message
+throw new CustomException(new Exception(), "Operation failed: " + errorMessage);
+
+// Wrap caught exception
+throw new CustomException(e);
+```
+
+### Try-Catch Pattern in Tests
+```java
+@Test(description = "Test description")
+public void testMethod() throws Exception {
+    try {
+        // Test steps
+        
+        // Verify success
+        if (!pageObject.isOperationSuccessful()) {
+            String errorMessage = pageObject.getResponseErrorMessage();
+            throw new CustomException(new Exception(), 
+                "Operation failed: " + errorMessage);
+        }
+        
+        // Log success and continue
+        ExtentTestManager.getTest().pass("Operation successful");
+        
+        // Assertions
+        Assert.assertEquals(actual, expected, "Assertion message");
+        
+    } catch (Exception e) {
+        throw new CustomException(e, MANUAL_TC_ID, "Failed", startedOn, CommonUtil.getCurrentTime());
+    }
+}
+```
+
+## Test Lifecycle Logging
+
+### BeforeMethod
+```java
+@BeforeMethod
+public void setUp() {
+    startedOn = CommonUtil.getCurrentTime();
+    // Load test data
+    testData = xlsFile.readTestData("<Sheet>", "<TestCase>");
+}
+```
+
+### AfterMethod (Cleanup)
+```java
+@AfterMethod
+public void tearDown(ITestResult result) throws Exception {
+    // Only cleanup if resource was created
+    if (resourceId != null && !resourceId.trim().isEmpty()) {
+        ExtentTestManager.getTest().info("Cleaning up: deleting resource " + resourceId);
+        
+        PageObject page = new PageObject(apiUtil);
+        page.deleteResource(resourceId);
+        
+        if (page.getResponseSuccess()) {
+            ExtentTestManager.getTest().pass("Cleanup successful");
+        }
+    }
+}
+```
+
+## Negative Test Patterns
+
+### Expected Failure Tests
+```java
+@Test(description = "Verify error when required field missing")
+public void testCreateWithoutRequiredField() throws Exception {
+    try {
+        // Attempt operation that should fail
+        pageObject.createEntity(testData, template, List.of("requiredField"));
+        
+        // If we get here and it succeeded, that's a failure
+        if (pageObject.isCreateSuccessful()) {
+            resourceId = pageObject.getEntityId();  // For cleanup
+            throw new CustomException(new Exception(), 
+                "Should have failed but succeeded. ID: " + resourceId);
+        }
+        
+        // Log expected failure
+        ExtentTestManager.getTest().pass(
+            "Operation correctly rejected. Status: " + pageObject.getStatusCode());
+        
+        // Verify status code
+        Assert.assertEquals(pageObject.getStatusCode(), APIConstants.STATUS_BAD_REQUEST);
+        
+        // Verify error message
+        String error = pageObject.getResponseErrorMessage();
+        Assert.assertEquals(error, APIConstants.ERR_REQUIRED_FIELD_MISSING);
+        ExtentTestManager.getTest().pass("Error message verified: " + error);
+        
+    } catch (Exception e) {
+        throw new CustomException(e, MANUAL_TC_ID, "Failed", startedOn, CommonUtil.getCurrentTime());
+    }
+}
+```
+
+## Best Practices
+
+1. **Log every significant step** - Makes debugging easier
+2. **Use String.format** - For readable log messages with variables
+3. **Assert with messages** - Always provide assertion failure context
+4. **Cleanup in AfterMethod** - Ensure test isolation
+5. **Check null before cleanup** - Resource may not have been created
+6. **Wrap in try-catch** - Use CustomException for consistent handling
+7. **Track timestamps** - For test management integration
+8. **Validate both success and failure** - Status code AND response content

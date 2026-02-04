@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Cogmento-Test-Automation" parallel="classes" thread-count="3" verbose="1" data-provider-thread-count="8">
+    <listeners>
+        <listener class-name="com.example.listeners.CustomNGListener" />
+    </listeners>
+    <test name="Regression tests">
+        <classes>          
+          <class name="com.example.module.ClassNameTest"/>
+        </classes>
+    </test>
+</suite>

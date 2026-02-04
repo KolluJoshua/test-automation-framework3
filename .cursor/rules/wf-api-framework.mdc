@@ -1,0 +1,100 @@
+---
+description: Core API test automation framework conventions - architecture, structure, and patterns
+globs:
+alwaysApply: true
+---
+
+# API Test Automation Framework Conventions
+
+## Project Architecture
+
+This is a Java-based API test automation framework using:
+- **Build Tool**: Maven
+- **Test Framework**: TestNG
+- **HTTP Client**: Rest-Assured
+- **JSON Processing**: Gson
+- **Data Management**: Apache POI (Excel), JSON templates
+- **Reporting**: ExtentReports, ReportPortal integration
+- **Utilities**: Lombok, DataFaker
+
+## Package Structure
+
+```
+src/
+  main/java/com/<org>/
+    actions/          # HTTP operations, validators
+    beans/            # POJOs for configuration and data
+    config/           # Application configuration interfaces
+    constants/        # API endpoints, status codes, templates paths
+    exception/        # Custom exception handlers
+    interfaces/       # Contracts and interfaces
+    listeners/        # TestNG listeners (retry, custom reporting)
+    pages/            # API page objects (domain-specific API wrappers)
+    reporting/        # Extent and test result reporters
+    support/          # Data readers (Excel, files)
+    utils/            # Utility classes (API, JSON, Schema, Common)
+  test/java/com/<org>/
+    base/             # Base test class
+    <domain>/         # Domain-specific test classes (e.g., company/, user/)
+  test/resources/
+    jsontemplate/     # JSON request payload templates organized by domain
+    schemas/          # JSON schema files for response validation
+    testdata/         # Excel test data files
+    *.properties      # Configuration properties
+    testng-*.xml      # TestNG suite files
+```
+
+## Naming Conventions
+
+### Classes
+- Base test class: `Base*Test` or `BaseTest*` (e.g., `BaseTestAPI`)
+- Test classes: `<Action><Entity>*Test.java` (e.g., `CreateCompanyAPITest.java`)
+- Page objects: `<Entity>.java` (e.g., `Companies.java`, `Users.java`)
+- Utilities: `<Purpose>Util.java` (e.g., `APIUtil.java`, `JSONUtil.java`)
+- Constants: `<Purpose>Constants.java` or `<Purpose>Endpoints.java`
+
+### Methods
+- Test methods: `test<ActionEntity>()` (e.g., `testCreateCompany()`)
+- Page object methods: verb-based (e.g., `createCompany()`, `updateUser()`, `deleteOrder()`)
+- Helper methods: descriptive camelCase (e.g., `isCreateSuccessful()`, `getResponseErrorMessage()`)
+
+### Test Data
+- Excel sheet names: `<Entity>_API` (e.g., `Company_API`, `User_API`)
+- Test case IDs: `TC-XX` or `TC-XX-<variant>` (e.g., `TC-01`, `TC-01-update`)
+- JSON templates: `<entity>/<operation>.json` (e.g., `company/companies.json`)
+
+## Class Hierarchy
+
+```
+BaseTestAPI (base test class)
+    |
+    +-- <Domain>Test classes (e.g., CreateCompanyAPITest)
+    
+BaseAPI (base page object)
+    |
+    +-- <Entity> page objects (e.g., Companies, Users)
+```
+
+## Standard Imports for Test Classes
+
+Test classes typically require:
+- Base test class from `base` package
+- Page object(s) from `pages` package
+- Constants from `constants` package
+- Exception handler from `exception` package
+- Reporting utilities from `reporting` package
+- Common utilities from `utils` package
+- TestNG annotations and assertions
+
+## Configuration
+
+- Application properties loaded via Owner library interface
+- Configuration details accessible through singleton utility
+- Base URL, credentials, and paths configured in properties file
+
+## Test Execution
+
+- Tests run via TestNG XML suites
+- Parallel execution supported at class level
+- Retry mechanism available via listeners
+- Results reported to Extent and optionally to external systems
