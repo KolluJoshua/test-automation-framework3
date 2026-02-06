@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extentreports>
+    <configuration>
+        <!-- report theme -->
+        <!-- STANDARD, DARK -->
+        <theme>STANDARD</theme>
+
+        <!-- document encoding -->
+        <!-- defaults to UTF-8 -->
+        <encoding>utf-8</encoding>
+
+        <!-- protocol for script and stylesheets -->
+        <!-- defaults to https -->
+        <!-- HTTP, HTTPS -->
+        <protocol>HTTP</protocol>
+
+        <!-- offline report -->
+        <timelineEnabled>true</timelineEnabled>
+
+        <!-- offline report -->
+        <offlineMode>true</offlineMode>
+
+        <thumbnailForBase64>false</thumbnailForBase64>
+
+        <!-- title of the document -->
+        <documentTitle>Reports</documentTitle>
+
+
+        <reportName>
+            Cogmento Automation Reports
+        </reportName>
+
+        <!-- timestamp format -->
+        <timeStampFormat>MMM dd, yyyy HH:mm:ss a</timeStampFormat>
+
+        <!--        &lt;!&ndash; custom javascript &ndash;&gt;-->
+        <!--        <js>js1</js>-->
+
+        <!--        &lt;!&ndash; custom styles &ndash;&gt;-->
+        <!--        <css>css1</css>-->
+    </configuration>
+</extentreports>

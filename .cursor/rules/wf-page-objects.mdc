@@ -1,0 +1,164 @@
+---
+description: Page object patterns for API automation - how to create and structure API page objects
+globs:
+  - "**/pages/**"
+  - "**/actions/**"
+alwaysApply: false
+---
+
+# API Page Object Patterns
+
+## Purpose
+
+Page objects encapsulate API operations for a specific domain/entity, providing:
+- Reusable methods for CRUD operations
+- Response parsing and validation helpers
+- Clean separation from test logic
+
+## Structure
+
+### Base Page Object
+
+The base page object provides:
+- API utility instance for HTTP operations
+- JSON utility for payload manipulation
+- Response utility for parsing responses
+- Common helper methods
+
+```java
+public class BaseAPI {
+    protected final APIUtil apiUtil;
+    protected final JSONUtil jsonUtil;
+    protected final ResponseUtil responseUtil;
+    private Response response;
+    
+    // Constructor accepts API utility
+    // JSON helpers: readTemplate, updateField, addProperty, removeField
+    // Response helpers: getStatusCode, isSuccess, getFieldValue, etc.
+}
+```
+
+### Domain Page Object
+
+Each entity/domain gets its own page object extending the base:
+
+```java
+public class <Entity> extends BaseAPI {
+    
+    // Template path and name
+    public String JSONFilePath;
+    public String templateName;
+    
+    // Response holder
+    private Response response;
+    
+    // Constructor
+    public <Entity>(APIUtil apiUtil) {
+        super(apiUtil);
+        this.JSONFilePath = apiUtil.JSONFilePath;
+        this.templateName = <TemplateConstant>;
+    }
+    
+    // CRUD Operations
+    public void create<Entity>(HashMap<String, String> testData) { }
+    public void update<Entity>(HashMap<String, String> testData, JsonObject payload, String id) { }
+    public void delete<Entity>(String id) { }
+    public Response getAll<Entities>() { }
+    
+    // Validation helpers
+    public boolean isCreate<Entity>Successful() { }
+    public String get<Entity>Id() { }
+    public String get<Entity>Name() { }
+    
+    // Lookup methods
+    public boolean check<Entity>Present(String fieldName, String value) { }
+    public String get<Entity>ID(String name) { }
+}
+```
+
+## Method Patterns
+
+### Create Operation
+```java
+public void create<Entity>(HashMap<String, String> testData) {
+    create<Entity>(testData, this.templateName, null);
+}
+
+public void create<Entity>(HashMap<String, String> testData, String templateName) {
+    create<Entity>(testData, templateName, null);
+}
+
+public void create<Entity>(HashMap<String, String> testData, String templateName, List<String> fieldsToRemove) {
+    // 1. Build template path
+    String filePath = JSONFilePath.concat(File.separator).concat(templateName);
+    
+    // 2. Read JSON template
+    JsonObject payload = readJSONTemplate(filePath);
+    
+    // 3. Populate fields from test data
+    addPropertySafe(payload, "field1", testData.get("field1"));
+    addPropertySafe(payload, "field2", testData.get("field2"));
+    // ... more fields
+    
+    // 4. Handle nested objects if needed
+    // 5. Remove fields for negative tests
+    removeFields(payload, fieldsToRemove);
+    
+    // 6. Send request
+    response = apiUtil.sendPost(payload, <Endpoint>, "Creating <entity>...");
+    setResponse(response);
+}
+```
+
+### Update Operation
+```java
+public void update<Entity>(HashMap<String, String> testData, JsonObject payload, String id) {
+    addPropertySafe(payload, "id", id);
+    updateJSONTemplateWithTestData(payload, testData);
+    String url = String.format(<EndpointWithId>, id);
+    response = apiUtil.sendPost(payload, url, "Updating <entity>...");
+    setResponse(response);
+}
+```
+
+### Delete Operation
+```java
+public void delete<Entity>(String id) {
+    String url = String.format(<EndpointWithId>, id);
+    response = apiUtil.sendDELETE(url);
+    setResponse(response);
+}
+```
+
+### Validation Helpers
+```java
+public boolean isCreate<Entity>Successful() {
+    return getStatusCode() == 201 && getResponseSuccess();
+}
+
+public String get<Entity>Id() {
+    return getReferenceID();  // Uses base method to extract ID from response
+}
+```
+
+## Best Practices
+
+1. **One page object per entity/domain** - Keep focused and cohesive
+2. **Overload methods for flexibility** - Provide simple and detailed versions
+3. **Use base class methods** - Don't duplicate JSON/response utilities
+4. **Return Response when needed** - Allow tests to do additional validation
+5. **Provide boolean validators** - `isSuccessful()`, `isPresent()` methods
+6. **Handle null safely** - Use `addPropertySafe` to skip null values
+7. **Log operations** - Pass descriptive messages to API utility
+8. **Support field removal** - For negative test scenarios
+
+## When to Create New Page Object
+
+Create a new page object when:
+- Testing a new API domain/entity
+- Multiple tests will use the same API operations
+- Complex request building logic is needed
+
+Do NOT create when:
+- Single one-off API call
+- Simple GET request with no reuse
