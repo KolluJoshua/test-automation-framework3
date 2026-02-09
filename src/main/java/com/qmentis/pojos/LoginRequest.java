@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * POJO representing a login request.
- * Utilizes Lombok for boilerplate code reduction and Jackson for JSON serialization/deserialization.
+ * This class uses Lombok annotations for boilerplate code reduction.
  */
 @Data
 @Builder
@@ -29,7 +29,7 @@ public class LoginRequest {
     private String password;
 
     /**
-     * The device ID from which the login request is made.
+     * The device ID from which the login attempt is made.
      */
     @JsonProperty("deviceId")
     private String deviceId;
