@@ -10,8 +10,8 @@ import org.testng.asserts.SoftAssert;
 import static io.restassured.RestAssured.given;
 
 /**
- * TestLoginAPI class contains test cases for the login API.
- * It uses TestNG framework and RestAssured for API testing.
+ * Test class for Login API using TestNG and RestAssured.
+ * This class tests login functionality with valid and invalid credentials.
  */
 public class TestLoginAPI extends BaseRestAssuredTest {
 
@@ -19,7 +19,7 @@ public class TestLoginAPI extends BaseRestAssuredTest {
     private RequestSpecification request;
 
     /**
-     * Setup method to initialize RestAssured base URI and request specification.
+     * Setup method to initialize RestAssured request specification.
      */
     @BeforeClass
     public void setUp() {
@@ -32,55 +32,100 @@ public class TestLoginAPI extends BaseRestAssuredTest {
 
     /**
      * Data provider for login test scenarios.
-     *
-     * @return Object[][] containing test scenarios with description, username, password, and expected result.
+     * 
+     * @return Object[][] containing test scenarios
      */
     @DataProvider(name = "loginTestData")
     public Object[][] loginTestDataProvider() {
         return new Object[][] {
-            {"Valid login", "testuser@example.com", "ValidPass123!", true},
-            {"Invalid login - wrong password", "testuser@example.com", "WrongPass!", false},
-            {"Invalid login - non-existent user", "nonexistent@example.com", "SomePass123!", false}
+            {"Valid credentials", "testuser@example.com", "ValidPass123!", 200, "Login successful"},
+            {"Invalid password", "testuser@example.com", "InvalidPass", 401, "Invalid credentials"},
+            {"Invalid username", "invaliduser@example.com", "ValidPass123!", 401, "Invalid credentials"}
         };
     }
 
     /**
-     * Test method for login scenarios using different credentials.
-     *
-     * @param description Description of the test scenario.
-     * @param username Username for login.
-     * @param password Password for login.
-     * @param expectedSuccess Expected success result.
+     * Test method for login scenarios.
+     * 
+     * @param description Description of the test scenario
+     * @param username Username for login
+     * @param password Password for login
+     * @param expectedStatusCode Expected HTTP status code
+     * @param expectedMessage Expected response message
      */
     @Test(groups = {"api", "login"}, dataProvider = "loginTestData", priority = 1)
-    public void testLoginScenario(String description, String username, String password, boolean expectedSuccess) {
+    public void testLoginScenario(String description, String username, String password, int expectedStatusCode, String expectedMessage) {
         // Arrange
-        LoginRequest loginRequest = LoginRequest.builder()
+        LoginRequest requestBody = LoginRequest.builder()
             .username(username)
             .password(password)
-            .deviceId("android_test_001")
             .build();
 
         // Act
         Response response = request
-            .body(loginRequest)
+            .body(requestBody)
             .post(LOGIN_ENDPOINT);
 
         // Assert
         SoftAssert softly = new SoftAssert();
-        softly.assertEquals(response.getStatusCode(), 200, "Status code mismatch");
+        softly.assertEquals(response.getStatusCode(), expectedStatusCode, "Status code mismatch");
 
-        LoginResponse loginResponse = response.as(LoginResponse.class);
-        softly.assertEquals(loginResponse.isSuccess(), expectedSuccess, "Login success mismatch");
+        if (response.getStatusCode() == 200) {
+            LoginResponse responseBody = response.as(LoginResponse.class);
+            softly.assertEquals(responseBody.getMessage(), expectedMessage, "Response message mismatch");
+        } else {
+            String errorMessage = response.jsonPath().getString("error");
+            softly.assertEquals(errorMessage, expectedMessage, "Error message mismatch");
+        }
 
         softly.assertAll();
     }
 
     /**
-     * Teardown method for cleanup after tests.
+     * Cleanup method after all tests are executed.
      */
     @AfterClass
     public void tearDown() {
         // Cleanup resources if needed
     }
+}
+package com.qmentis.pojos;
+
+import lombok.Builder;
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * POJO representing the login request payload.
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class LoginRequest {
+
+    @JsonProperty("username")
+    private String username;
+
+    @JsonProperty("password")
+    private String password;
+}
+package com.qmentis.pojos;
+
+import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * POJO representing the login response payload.
+ */
+@Data
+public class LoginResponse {
+
+    @JsonProperty("message")
+    private String message;
+
+    @JsonProperty("token")
+    private String token;
 }
