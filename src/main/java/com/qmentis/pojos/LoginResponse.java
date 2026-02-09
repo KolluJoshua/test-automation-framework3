@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * POJO representing the response from a login API call.
+ * POJO representing the response from a login API.
  */
 @Data
 @Builder
@@ -15,33 +15,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @NoArgsConstructor
 public class LoginResponse {
 
-    /**
-     * The status of the login operation.
-     */
-    @JsonProperty("status")
-    private String status;
-
-    /**
-     * The message returned by the login operation.
-     */
-    @JsonProperty("message")
-    private String message;
-
-    /**
-     * The token provided upon successful login.
-     */
     @JsonProperty("token")
     private String token;
 
-    /**
-     * The user ID associated with the login.
-     */
     @JsonProperty("user_id")
     private String userId;
 
-    /**
-     * The expiration time of the token.
-     */
     @JsonProperty("expires_in")
-    private Long expiresIn;
+    private int expiresIn;
+
+    @JsonProperty("refresh_token")
+    private String refreshToken;
+
+    @JsonProperty("scope")
+    private String scope;
 }

@@ -11,15 +11,15 @@ import static io.restassured.RestAssured.given;
 
 /**
  * Test class for Login API.
- * This class tests login functionality using valid and invalid credentials.
+ * This class uses TestNG for testing and RestAssured for API interaction.
  */
 public class TestLoginAPI extends BaseRestAssuredTest {
 
-    private static final String LOGIN_ENDPOINT = "/api/v1/login";
+    private static final String LOGIN_ENDPOINT = "/auth/login";
     private RequestSpecification request;
 
     /**
-     * Setup method to initialize RestAssured base URI and request specification.
+     * Sets up the RestAssured request specification.
      */
     @BeforeClass
     public void setUp() {
@@ -32,30 +32,29 @@ public class TestLoginAPI extends BaseRestAssuredTest {
 
     /**
      * Data provider for login test scenarios.
-     * Provides valid and invalid login credentials.
      *
      * @return Object[][] containing test scenarios
      */
-    @DataProvider(name = "loginTestData")
-    public Object[][] loginTestDataProvider() {
+    @DataProvider(name = "loginData")
+    public Object[][] loginDataProvider() {
         return new Object[][] {
-            {"Valid Login", "testuser@example.com", "ValidPass123!", 200, "Login successful"},
-            {"Invalid Login", "invaliduser@example.com", "InvalidPass", 401, "Unauthorized"}
+            {"Valid Login", "testuser@example.com", "ValidPass123!", 200, true},
+            {"Invalid Password", "testuser@example.com", "InvalidPass", 401, false},
+            {"Invalid Username", "invaliduser@example.com", "ValidPass123!", 401, false}
         };
     }
 
     /**
-     * Test method for login scenarios.
-     * Uses data from the loginTestDataProvider.
+     * Tests the login API with various scenarios.
      *
-     * @param description Description of the test scenario
-     * @param username Username for login
-     * @param password Password for login
+     * @param description Test scenario description
+     * @param username    Username for login
+     * @param password    Password for login
      * @param expectedStatusCode Expected HTTP status code
-     * @param expectedMessage Expected response message
+     * @param expectedSuccess Expected success status in response
      */
-    @Test(groups = {"api", "login"}, dataProvider = "loginTestData", priority = 1)
-    public void testLogin(String description, String username, String password, int expectedStatusCode, String expectedMessage) {
+    @Test(groups = {"api", "login"}, dataProvider = "loginData", priority = 1)
+    public void testLogin(String description, String username, String password, int expectedStatusCode, boolean expectedSuccess) {
         // Arrange
         LoginRequest loginRequest = LoginRequest.builder()
             .username(username)
@@ -72,21 +71,60 @@ public class TestLoginAPI extends BaseRestAssuredTest {
         SoftAssert softly = new SoftAssert();
         softly.assertEquals(response.getStatusCode(), expectedStatusCode, "Status code mismatch");
 
-        if (response.getStatusCode() == 200) {
-            LoginResponse loginResponse = response.as(LoginResponse.class);
-            softly.assertEquals(loginResponse.getMessage(), expectedMessage, "Message mismatch");
-        } else {
-            softly.assertTrue(response.getBody().asString().contains(expectedMessage), "Error message mismatch");
-        }
+        LoginResponse loginResponse = response.as(LoginResponse.class);
+        softly.assertEquals(loginResponse.isSuccess(), expectedSuccess, "Success status mismatch");
 
         softly.assertAll();
     }
 
     /**
-     * Cleanup method to perform any necessary teardown.
+     * Cleans up after tests.
      */
     @AfterClass
     public void tearDown() {
-        // Cleanup actions if necessary
+        // Cleanup logic if necessary
     }
+}
+package com.qmentis.pojos;
+
+import lombok.Builder;
+import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * POJO for login request.
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class LoginRequest {
+
+    @JsonProperty("username")
+    private String username;
+
+    @JsonProperty("password")
+    private String password;
+
+    @JsonProperty("deviceId")
+    private String deviceId;
+}
+package com.qmentis.pojos;
+
+import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * POJO for login response.
+ */
+@Data
+public class LoginResponse {
+
+    @JsonProperty("success")
+    private boolean success;
+
+    @JsonProperty("token")
+    private String token;
 }
