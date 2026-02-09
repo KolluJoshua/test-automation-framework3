@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents a login request payload.
+ * POJO class representing a login request.
+ * Utilizes Lombok annotations for boilerplate code reduction.
  */
 @Data
 @Builder
@@ -15,21 +16,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @NoArgsConstructor
 public class LoginRequest {
 
-    /**
-     * The username for login.
-     */
+    /** The username of the user attempting to log in. */
     @JsonProperty("username")
     private String username;
 
-    /**
-     * The password for login.
-     */
+    /** The password of the user attempting to log in. */
     @JsonProperty("password")
     private String password;
 
-    /**
-     * The device ID from which the login is attempted.
-     */
+    /** The device ID from which the login attempt is made. */
     @JsonProperty("deviceId")
     private String deviceId;
 }

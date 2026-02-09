@@ -18,15 +18,15 @@ public class LoginResponse {
     @JsonProperty("token")
     private String token;
 
+    @JsonProperty("user_id")
+    private String userId;
+
     @JsonProperty("expires_in")
     private int expiresIn;
 
     @JsonProperty("refresh_token")
     private String refreshToken;
 
-    @JsonProperty("user_id")
-    private String userId;
-
-    @JsonProperty("status")
-    private String status;
+    @JsonProperty("scope")
+    private String scope;
 }
